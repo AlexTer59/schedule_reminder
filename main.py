@@ -1,16 +1,28 @@
-# This is a sample Python script.
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters.command import Command
+import asyncio
+import os
+from dotenv import load_dotenv
+# load .env variables
+load_dotenv()
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+# Telegram API token
+TOKEN_API = os.getenv('TOKEN')
+
+# Bot object
+bot = Bot(token=TOKEN_API)
+# Dispatcher
+dp = Dispatcher()
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+# Handler any message
+@dp.message()
+async def cmd_start(message: types.Message):
+    await message.answer(text=message.text)
 
 
-# Press the green button in the gutter to run the script.
+async def main():
+    await dp.start_polling(bot)
+
 if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    asyncio.run(main())
