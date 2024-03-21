@@ -1,3 +1,10 @@
+'''
+TASK 1:
+if message more than two words, return: this message in upper case
+else, return string 'Too short message, {"user_name"}'
+'''
+
+
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command
 import asyncio
@@ -18,7 +25,10 @@ dp = Dispatcher()
 # Handler any message
 @dp.message()
 async def cmd_start(message: types.Message):
-    await message.answer(text=message.text)
+    if message.text.count(' ') > 2:
+        await message.answer(text=message.text.upper())
+    else:
+        await message.reply(f'Too short message, {message.from_user.first_name}')
 
 
 async def main():
