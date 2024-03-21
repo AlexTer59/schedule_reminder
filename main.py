@@ -1,10 +1,3 @@
-'''
-TASK 1:
-if message more than two words, return: this message in upper case
-else, return string 'Too short message, {"user_name"}'
-'''
-
-
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command
 import asyncio
@@ -13,13 +6,28 @@ from dotenv import load_dotenv
 # load .env variables
 load_dotenv()
 
-# Telegram API token
-TOKEN_API = os.getenv('TOKEN')
+HELP = '''
+/help - список команд;
+/start - начать работу с ботом;
+'''
 
 # Bot object
-bot = Bot(token=TOKEN_API)
+bot = Bot(token=os.getenv('TOKEN'))
 # Dispatcher
 dp = Dispatcher()
+
+
+# Handler /start command
+@dp.message(Command('start'))
+async def help_command(message: types.Message):
+    await message.answer(text="Hi, I'm a Telegram bot, powered by aiogram! Let's start!")
+    await message.delete()
+
+
+# Handler /help command
+@dp.message(Command('help'))
+async def help_command(message: types.Message):
+    await message.reply(text=HELP)
 
 
 # Handler any message
