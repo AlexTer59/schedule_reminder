@@ -1,10 +1,3 @@
-'''
-TASK 2 The bot must answer to user with a random letter from the alphabet;
-You need to add /description command handler which returns the description of the bot;
-You need to add /count command handler which returns number of own calls;
-The bot nust answer 'YES' if user message includes the 0 number or 'NO' if it's not
-'''
-
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command
 import asyncio
@@ -20,7 +13,8 @@ HELP = '''
 /help - список команд;
 /start - начать работу с ботом;
 /description - описание бота;
-/count - просто счетчик.
+/count - просто счетчик;
+/give - команда для получения стикера.
 '''
 
 count = 0
@@ -31,10 +25,15 @@ bot = Bot(token=os.getenv('TOKEN'))
 dp = Dispatcher()
 
 
+async def on_startup():
+    print('Бот успешно запущен!')
+
+
 # Handler /start command
 @dp.message(Command('start'))
 async def cmd_start(message: types.Message):
-    await message.answer(text="Hi, I'm a Telegram bot, powered by aiogram! Let's start!")
+    await message.answer(text="<b>Hi, I'm a Telegram bot, powered by <em>aiogram!</em> Let's start!</b>",
+                         parse_mode="HTML")
     await message.delete()
 
 
@@ -58,15 +57,25 @@ async def cmd_cont(message: types.Message):
     await message.reply(text=f'Count: {count}')
 
 
+# Handler /give command
+@dp.message(Command('give'))
+async def cmd_give(message: types.Message):
+    await bot.send_sticker(message.from_user.id, sticker=f'''
+                        {random.choice(["CAACAgIAAxkBAAELxXVl_VjV8lHilA5_OAUn3pR4KjM6yQAC0AwAAsO7wUtQyA2abxmZdjQE",
+                        "CAACAgIAAxkBAAELxXdl_VlMB0hA1wSbtkAHOPGyPlHfCAACNAADwDZPE_GCwMy0CI7UNAQ"])}''')
+
+
 # Handler any message
 @dp.message()
-async def is_null_here(message: types.Message):
+async def any_msg(message: types.Message):
     await message.reply('YES') if '0' in message.text else await message.reply('No')
-    await message.answer(text=random.choice(string.ascii_uppercase))
+    await message.answer(text=(random.choice(string.ascii_uppercase) + "❤️"))
 
 
 async def main():
+    dp.startup.register(on_startup)
     await dp.start_polling(bot)
+
 
 if __name__ == '__main__':
     asyncio.run(main())
