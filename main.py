@@ -1,8 +1,20 @@
-from aiogram import Bot, Dispatcher, types
+'''
+TASK 3:
+1) Make a bot which will send a cat sticker as an answer on the /give command. But before send the sticker bot sends the
+message: "Смотри какой смешной кот ❤️!"; +
+2) Modify the bot by adding possible to send the common heart but get the black heart as answer; +
+3) Modify the bot which will count ✅ in the user message and will return this quantity; +
+4) Modify the /help command which will return the list of available commands but the command name must be a bold text
+and description must be an italic; +
+5) Make an on_sturtup() func which will print on the terminal "Я запустился!"; +
+6) Make a func which will return the ID of sent sticker as reply of user message. +
+'''
+
+
+from aiogram import Bot, Dispatcher, types, F
+from aiogram.types import ContentType
 from aiogram.filters.command import Command
 import asyncio
-import random
-import string
 import os
 from dotenv import load_dotenv
 
@@ -10,11 +22,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 HELP = '''
-/help - список команд;
-/start - начать работу с ботом;
-/description - описание бота;
-/count - просто счетчик;
-/give - команда для получения стикера.
+<b>/help</b> - <em>список команд;</em>
+<b>/start</b> - <em>начать работу с ботом;</em>
+<b>/description</b> - <em>описание бота;</em>
+<b>/count</b> - <em>просто счетчик;</em>
+<b>/give</b> - <em>команда для получения стикера.</em>
 '''
 
 count = 0
@@ -26,7 +38,7 @@ dp = Dispatcher()
 
 
 async def on_startup():
-    print('Бот успешно запущен!')
+    print('Я запустился!')
 
 
 # Handler /start command
@@ -46,7 +58,7 @@ async def cmd_description(message: types.Message):
 # Handler /help command
 @dp.message(Command('help'))
 async def cmd_help(message: types.Message):
-    await message.reply(text=HELP)
+    await message.reply(text=HELP, parse_mode='HTML')
 
 
 # Handler /count command
@@ -60,16 +72,25 @@ async def cmd_cont(message: types.Message):
 # Handler /give command
 @dp.message(Command('give'))
 async def cmd_give(message: types.Message):
-    await bot.send_sticker(message.from_user.id, sticker=f'''
-                        {random.choice(["CAACAgIAAxkBAAELxXVl_VjV8lHilA5_OAUn3pR4KjM6yQAC0AwAAsO7wUtQyA2abxmZdjQE",
-                        "CAACAgIAAxkBAAELxXdl_VlMB0hA1wSbtkAHOPGyPlHfCAACNAADwDZPE_GCwMy0CI7UNAQ"])}''')
+    await message.answer(text='Смотри какой смешной кот ❤️!')
+    await bot.send_sticker(message.from_user.id, sticker='CAACAgIAAxkBAAELxX9l_WEo_sSMW3JO_RwhZTP9_EGD5gACwQ4AApq2SUhGy_Y9suGsBTQE')
 
+
+# Handler sticker message
+@dp.message(F.content_type == ContentType.STICKER)
+async def get_sticker_id(message: types.Message):
+    await message.reply(message.sticker.file_id)
 
 # Handler any message
 @dp.message()
 async def any_msg(message: types.Message):
-    await message.reply('YES') if '0' in message.text else await message.reply('No')
-    await message.answer(text=(random.choice(string.ascii_uppercase) + "❤️"))
+    if '♥' in message.text:
+        msg_text = message.text.replace('♥', '🖤')
+        await message.answer(msg_text)
+    else:
+        await message.answer(message.text)
+    await message.answer(f'Всего в тексте галочек: {message.text.count("✅")}.')
+
 
 
 async def main():
