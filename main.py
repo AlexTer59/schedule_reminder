@@ -1,6 +1,6 @@
 
 from aiogram import Bot, Dispatcher, types, F
-from aiogram.types import ContentType
+from aiogram.types import ContentType, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from aiogram.filters.command import Command
 import asyncio
 import os
@@ -25,6 +25,14 @@ count = 0
 bot = Bot(token=os.getenv('TOKEN'))
 # Dispatcher
 dp = Dispatcher()
+kb = [
+    [KeyboardButton(text='/help')],
+    [KeyboardButton(text='/description')],
+    [KeyboardButton(text='/count')],
+    [KeyboardButton(text='/get_sticker')],
+    [KeyboardButton(text='/get_picture')],
+    [KeyboardButton(text='/get_location')]
+]
 
 
 async def on_startup():
@@ -34,8 +42,12 @@ async def on_startup():
 # Handler /start command
 @dp.message(Command('start'))
 async def cmd_start(message: types.Message):
-    await message.answer(text="<b>Hi, I'm a Telegram bot, powered by <em>aiogram!</em> Let's start!</b>",
-                         parse_mode="HTML")
+    keyboard = ReplyKeyboardMarkup(keyboard=kb,
+                                   resize_keyboard=True,
+                                   input_field_placeholder='Выберите команду:')
+    await bot.send_message(chat_id=message.chat.id, text="<b>Hi, I'm a Telegram bot, powered by <em>aiogram!</em> Let's start!</b>",
+                         parse_mode="HTML",
+                         reply_markup=keyboard)
     await message.delete()
 
 
