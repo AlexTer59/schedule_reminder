@@ -1,6 +1,19 @@
+'''
+Task 5
+1) Create the bot containing the inline keyboard which will opens by /links command; +
+2) Modify the bot so that every button of the inline keyboard contains a custom link; +
+3) Create the usual keyboard which will calls the /link command; +
+4) Crate the on_startup method which will print 'Я был запущен!' after run server and set the value of
+skip_updates = True; +
+5) Try to move the inline keyboard in a separate module. +
+'''
+
+
 from aiogram import Bot, Dispatcher, types, F
-from aiogram.types import ContentType, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import ContentType
+from aiogram.methods import DeleteWebhook
 from aiogram.filters.command import Command
+from keyboards import keyboard, inline_keyboard
 import asyncio
 import random
 import os
@@ -17,6 +30,7 @@ HELP = '''
 <b>/get_sticker</b> - <em>команда для получения стикера;</em>
 <b>/get_orange</b> - <em>команда для получения картинки апельсина;</em>
 <b>/get_location</b> - <em>команда для местоположения;</em>
+<b>/links</b> - <em>команда для вызова inline клавиатуры.</em>
 '''
 
 count = 0
@@ -25,30 +39,19 @@ count = 0
 bot = Bot(token=os.getenv('TOKEN'))
 # Dispatcher
 dp = Dispatcher()
-kb = [
-    [KeyboardButton(text='/help'), KeyboardButton(text='/description')],
-    [KeyboardButton(text='/count'), KeyboardButton(text='/get_sticker')],
-    [KeyboardButton(text='/get_orange'), KeyboardButton(text='/get_location')],
-    [KeyboardButton(text='❤️')]
-]
-ikb = [
-    [InlineKeyboardButton(text='GitHub', url='https://github.com/AlexTer59/schedule_reminder'),
-     InlineKeyboardButton(text='VK', url='https://vk.com/id137053909')]
-]
+
 
 async def on_startup():
-    print('Я запустился!')
+    print('Я был запущен!')
 
 
 # Handler /start command
 @dp.message(Command('start'))
 async def cmd_start(message: types.Message):
-    keyboard = ReplyKeyboardMarkup(keyboard=kb,
-                                   resize_keyboard=True,
-                                   input_field_placeholder='Выберите команду:')
-    await bot.send_message(chat_id=message.chat.id, text="<b>Hi, I'm a Telegram bot, powered by <em>aiogram!</em> Let's start!</b>",
-                         parse_mode="HTML",
-                         reply_markup=keyboard)
+    await bot.send_message(chat_id=message.chat.id,
+                           text="<b>Hi, I'm a Telegram bot, powered by <em>aiogram!</em> Let's start!</b>",
+                           parse_mode="HTML",
+                           reply_markup=keyboard)
 
     await message.delete()
 
@@ -62,11 +65,9 @@ async def cmd_description(message: types.Message):
 # Handler /help command
 @dp.message(Command('help'))
 async def cmd_help(message: types.Message):
-    inline_keyboard = InlineKeyboardMarkup(inline_keyboard=ikb)
     await bot.send_message(chat_id=message.from_user.id,
                            text=HELP,
-                           parse_mode='HTML',
-                           reply_markup=inline_keyboard)
+                           parse_mode='HTML')
     await message.delete()
 
 
@@ -82,8 +83,8 @@ async def get_pic_cmd(message: types.Message):
 @dp.message(Command('get_location'))
 async def get_loc_cmd(message: types.Message):
     await bot.send_location(chat_id=message.chat.id,
-                            latitude=random.randint(-90,90) + round(random.random(), 4),
-                            longitude=random.randint(-180,180) + round(random.random(), 4))
+                            latitude=random.randint(-90, 90) + round(random.random(), 4),
+                            longitude=random.randint(-180, 180) + round(random.random(), 4))
     await message.delete()
 
 
@@ -115,6 +116,14 @@ async def get_cat_sticker(message: types.Message):
                            sticker='CAACAgIAAxkBAAELxnxl_oNPVyP2v04UJkGBXR9rfhcqVwAC3gkAAqe9wEvo_3MQ5y3rrDQE')
 
 
+# Handler /links command
+@dp.message(Command('links'))
+async def get_links(message: types.Message):
+    await bot.send_message(chat_id=message.chat.id,
+                           text='Вот ссылки на соц.сети моего разработчика',
+                           reply_markup=inline_keyboard)
+
+
 # Handler any message
 @dp.message()
 async def any_msg(message: types.Message):
@@ -126,8 +135,8 @@ async def any_msg(message: types.Message):
     await message.answer(f'Всего в тексте галочек: {message.text.count("✅")}.')
 
 
-
 async def main():
+    await bot(DeleteWebhook(drop_pending_updates=True))  # There is not skip_updates() in the aiogram 3.X
     dp.startup.register(on_startup)
     await dp.start_polling(bot)
 
