@@ -1,14 +1,5 @@
-'''
-TASK 4
-1) Make a bot which will create a keyboard for user with /help, /description buttuns        +
-2) Modify the bot by adding possible to send a heart by keyboard and get as answer the sticker with cat +
-3) Create a func which return a random geolocation on the map and add possible to use it by keyboard.  +
-'''
-
-
-
 from aiogram import Bot, Dispatcher, types, F
-from aiogram.types import ContentType, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+from aiogram.types import ContentType, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters.command import Command
 import asyncio
 import random
@@ -40,7 +31,10 @@ kb = [
     [KeyboardButton(text='/get_orange'), KeyboardButton(text='/get_location')],
     [KeyboardButton(text='❤️')]
 ]
-
+ikb = [
+    [InlineKeyboardButton(text='GitHub', url='https://github.com/AlexTer59/schedule_reminder'),
+     InlineKeyboardButton(text='VK', url='https://vk.com/id137053909')]
+]
 
 async def on_startup():
     print('Я запустился!')
@@ -55,6 +49,7 @@ async def cmd_start(message: types.Message):
     await bot.send_message(chat_id=message.chat.id, text="<b>Hi, I'm a Telegram bot, powered by <em>aiogram!</em> Let's start!</b>",
                          parse_mode="HTML",
                          reply_markup=keyboard)
+
     await message.delete()
 
 
@@ -67,7 +62,11 @@ async def cmd_description(message: types.Message):
 # Handler /help command
 @dp.message(Command('help'))
 async def cmd_help(message: types.Message):
-    await bot.send_message(chat_id=message.from_user.id, text=HELP, parse_mode='HTML')
+    inline_keyboard = InlineKeyboardMarkup(inline_keyboard=ikb)
+    await bot.send_message(chat_id=message.from_user.id,
+                           text=HELP,
+                           parse_mode='HTML',
+                           reply_markup=inline_keyboard)
     await message.delete()
 
 
