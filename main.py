@@ -1,19 +1,8 @@
-'''
-Task 5
-1) Create the bot containing the inline keyboard which will opens by /links command; +
-2) Modify the bot so that every button of the inline keyboard contains a custom link; +
-3) Create the usual keyboard which will calls the /link command; +
-4) Crate the on_startup method which will print 'Я был запущен!' after run server and set the value of
-skip_updates = True; +
-5) Try to move the inline keyboard in a separate module. +
-'''
-
-
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import ContentType
 from aiogram.methods import DeleteWebhook
 from aiogram.filters.command import Command
-from keyboards import keyboard, inline_keyboard
+from keyboards import commands_keyboard, links_inline_keyboard, vote_inline_keyboard
 import asyncio
 import random
 import os
@@ -51,7 +40,7 @@ async def cmd_start(message: types.Message):
     await bot.send_message(chat_id=message.chat.id,
                            text="<b>Hi, I'm a Telegram bot, powered by <em>aiogram!</em> Let's start!</b>",
                            parse_mode="HTML",
-                           reply_markup=keyboard)
+                           reply_markup=commands_keyboard)
 
     await message.delete()
 
@@ -71,13 +60,21 @@ async def cmd_help(message: types.Message):
     await message.delete()
 
 
-# Handler /get_picture command
+# Handler /get_orange command
 @dp.message(Command('get_orange'))
 async def get_pic_cmd(message: types.Message):
     await bot.send_photo(chat_id=message.chat.id,
-                         photo='https://proprikol.ru/wp-content/uploads/2019/10/kartinki-apelsina-8.jpg')
+                         photo='https://proprikol.ru/wp-content/uploads/2019/10/kartinki-apelsina-8.jpg',
+                         caption='Тебе нравится это фото?',
+                         reply_markup=vote_inline_keyboard)
     await message.delete()
 
+
+@dp.callback_query()
+async def vote_callback(callback: types.CallbackQuery):
+    if callback.data == 'like':
+        await callback.answer(text='Вам понравилась фотография')
+    await callback.answer(text='Вам не понравилась фотография')
 
 # Handler /get_location command
 @dp.message(Command('get_location'))
@@ -96,7 +93,7 @@ async def cmd_cont(message: types.Message):
     await message.reply(text=f'Count: {count}')
 
 
-# Handler /give command
+# Handler /get_sticker command
 @dp.message(Command('get_sticker'))
 async def get_sticker_cmd(message: types.Message):
     await message.answer(text='Смотри какой смешной кот ❤️!')
@@ -121,7 +118,7 @@ async def get_cat_sticker(message: types.Message):
 async def get_links(message: types.Message):
     await bot.send_message(chat_id=message.chat.id,
                            text='Вот ссылки на соц.сети моего разработчика',
-                           reply_markup=inline_keyboard)
+                           reply_markup=links_inline_keyboard)
 
 
 # Handler any message
