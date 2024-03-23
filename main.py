@@ -1,8 +1,17 @@
+'''
+TASK 4
+1) Make a bot which will create a keyboard for user with /help, /description buttuns        +
+2) Modify the bot by adding possible to send a heart by keyboard and get as answer the sticker with cat +
+3) Create a func which return a random geolocation on the map and add possible to use it by keyboard.  +
+'''
+
+
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import ContentType, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from aiogram.filters.command import Command
 import asyncio
+import random
 import os
 from dotenv import load_dotenv
 
@@ -15,7 +24,7 @@ HELP = '''
 <b>/description</b> - <em>описание бота;</em>
 <b>/count</b> - <em>просто счетчик;</em>
 <b>/get_sticker</b> - <em>команда для получения стикера;</em>
-<b>/get_picture</b> - <em>команда для картинки;</em>
+<b>/get_orange</b> - <em>команда для получения картинки апельсина;</em>
 <b>/get_location</b> - <em>команда для местоположения;</em>
 '''
 
@@ -26,12 +35,10 @@ bot = Bot(token=os.getenv('TOKEN'))
 # Dispatcher
 dp = Dispatcher()
 kb = [
-    [KeyboardButton(text='/help')],
-    [KeyboardButton(text='/description')],
-    [KeyboardButton(text='/count')],
-    [KeyboardButton(text='/get_sticker')],
-    [KeyboardButton(text='/get_picture')],
-    [KeyboardButton(text='/get_location')]
+    [KeyboardButton(text='/help'), KeyboardButton(text='/description')],
+    [KeyboardButton(text='/count'), KeyboardButton(text='/get_sticker')],
+    [KeyboardButton(text='/get_orange'), KeyboardButton(text='/get_location')],
+    [KeyboardButton(text='❤️')]
 ]
 
 
@@ -65,10 +72,10 @@ async def cmd_help(message: types.Message):
 
 
 # Handler /get_picture command
-@dp.message(Command('get_picture'))
+@dp.message(Command('get_orange'))
 async def get_pic_cmd(message: types.Message):
     await bot.send_photo(chat_id=message.chat.id,
-                         photo='https://ag-spots-2019.o.auroraobjects.eu/2019/01/08/other/2880-1800-crop-bmw-m5-f90-competition-c301108012019101449_1.jpg')
+                         photo='https://proprikol.ru/wp-content/uploads/2019/10/kartinki-apelsina-8.jpg')
     await message.delete()
 
 
@@ -76,8 +83,8 @@ async def get_pic_cmd(message: types.Message):
 @dp.message(Command('get_location'))
 async def get_loc_cmd(message: types.Message):
     await bot.send_location(chat_id=message.chat.id,
-                            latitude=58.085000,
-                            longitude=57.818886)
+                            latitude=random.randint(-90,90) + round(random.random(), 4),
+                            longitude=random.randint(-180,180) + round(random.random(), 4))
     await message.delete()
 
 
@@ -93,13 +100,20 @@ async def cmd_cont(message: types.Message):
 @dp.message(Command('get_sticker'))
 async def get_sticker_cmd(message: types.Message):
     await message.answer(text='Смотри какой смешной кот ❤️!')
-    await bot.send_sticker(message.chat.id, sticker='CAACAgIAAxkBAAELxX9l_WEo_sSMW3JO_RwhZTP9_EGD5gACwQ4AApq2SUhGy_Y9suGsBTQE')
+    await bot.send_sticker(message.chat.id,
+                           sticker='CAACAgIAAxkBAAELxX9l_WEo_sSMW3JO_RwhZTP9_EGD5gACwQ4AApq2SUhGy_Y9suGsBTQE')
 
 
 # Handler sticker message
 @dp.message(F.content_type == ContentType.STICKER)
 async def get_sticker_id(message: types.Message):
     await message.reply(message.sticker.file_id)
+
+
+@dp.message(F.text == '❤️')
+async def get_cat_sticker(message: types.Message):
+    await bot.send_sticker(chat_id=message.chat.id,
+                           sticker='CAACAgIAAxkBAAELxnxl_oNPVyP2v04UJkGBXR9rfhcqVwAC3gkAAqe9wEvo_3MQ5y3rrDQE')
 
 
 # Handler any message
