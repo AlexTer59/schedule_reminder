@@ -1,8 +1,26 @@
+'''
+Global task (ru)
+1) Бот должен быть реализован таким образом, чтобы все обновления пропускались при оффлайн режиме; +
+2) Бот должен быть реализован в 2 файлах: в первом файле находится клавиатура бота, во втором файл, где
+расположен основной функционал бота; +
+3) У бота должны быть реализованы команды /start, /help, /description; +
+4) Должно присутвовать главное меню с клавиатурой, где пользователь может использовать каждую из этих команд; +
+5) должно быть реализовано меню, где пользователь может получить одну рандомную фотографию из заранее определенного
+списка. Оттуда должен быть переход на главное меню; +
+6) Под фотографией должно быть описание данной фотографии. При этом также должна присутствовать inline клавиатура; +
+7) При нажатии должен генерироваться callback запрос, ему должна быть сопоставлена обработка со стороны сервера; +
+8) inline клавиатура будет состоять из 4 кнопок: 1. Следующая рандомная фотография, 2. Лайк, 3. Дизлайк,
+4. Главное меню; +
+9) Если пользователь нажмет на лайк/дизлайк должен выводиться соответствующий label; +
+10) Требуется обработать повторное нажатие на кнопку при одной и той же фотографии;
+11) Требуется реализовать возможность отправлять стикеры, эмодзи и рандомное местоположение.
+'''
+
 from aiogram import Bot, Dispatcher, types, F
-from aiogram.types import ContentType
 from aiogram.methods import DeleteWebhook
+from aiogram.types import ReplyKeyboardRemove
 from aiogram.filters.command import Command
-from keyboards import commands_keyboard, links_inline_keyboard, vote_inline_keyboard
+from keyboards import main_menu_keyboard, links_inline_keyboard, vote_inline_keyboard
 import asyncio
 import random
 import os
@@ -12,124 +30,146 @@ from dotenv import load_dotenv
 load_dotenv()
 
 HELP = '''
-<b>/help</b> - <em>список команд;</em>
 <b>/start</b> - <em>начать работу с ботом;</em>
+<b>/help</b> - <em>список команд;</em>
 <b>/description</b> - <em>описание бота;</em>
-<b>/count</b> - <em>просто счетчик;</em>
-<b>/get_sticker</b> - <em>команда для получения стикера;</em>
-<b>/get_orange</b> - <em>команда для получения картинки апельсина;</em>
-<b>/get_location</b> - <em>команда для местоположения;</em>
 <b>/links</b> - <em>команда для вызова inline клавиатуры.</em>
+<b>Рандомная фотография</b> - <em>команда для получения рандомной фотографии.</em>
 '''
 
-count = 0
+IMAGE_LINKS = [
+    'https://myskillsconnect.com/uploads/posts/2023-06/1687341061_myskillsconnect-com-p-foto-bmv-m5-f90-kompetishn-na-oboi-13.jpg',
+    'https://www.carpixel.net/w/edcd160538afd7041e352e24c748f589/mercedes-amg-e-63-s-car-wallpaper-65537.jpg',
+    'https://kuznitsaspb.ru/wp-content/uploads/a/0/c/a0c8380c046f0f7b8ab4120e675e2956.jpeg',
+    'https://sportishka.com/uploads/posts/2022-08/1660842408_4-sportishka-com-p-lada-priora-sedan-novaya-krasivo-foto-7.jpg',
+    'http://audi.carwallpapers.ru/audi/rs7-sportback/2019/Audi-RS7-Sportback-2019-2560x1440-037.jpg'
+]
+
+IMAGE_DISCRIPTIONS = [
+    'BMW M5 F90',
+    'Mercedes-AMG E63S',
+    'Alfa Romeo Giulia',
+    'Lada Priora',
+    'Audi RS7'
+]
+
+IMAGE_DICT = dict(zip(IMAGE_LINKS, IMAGE_DISCRIPTIONS))
+
+HELLO_STICKERS = [
+    'CAACAgIAAxkBAAELyDtmAAEw3aTt3gABkQHeaaKrAYV7nlj1AAIWAAOhtzMI5tw7vxW0t8U0BA',
+    'CAACAgIAAxkBAAELyD1mAAExBgIlgqPsdOg_QhkCFYiwDe8AAiMAA8A2TxN7744rUwpfxjQE',
+    'CAACAgIAAxkBAAELyD9mAAExeb3QaGDPf6m8y5Drk4P9j7MAAgUAA8A2TxP5al-agmtNdTQE',
+    'CAACAgIAAxkBAAELyEFmAAExl_elj5PRTqlqFW1-VMZ_vzsAAgEBAAJWnb0KIr6fDrjC5jQ0BA',
+    'CAACAgIAAxkBAAELyENmAAExuOfqECxY95ngbs67xRu1Y2cAAh4JAAIYQu4I-VjZ7h0hnCE0BA'
+]
 
 # Bot object
 bot = Bot(token=os.getenv('TOKEN'))
 # Dispatcher
 dp = Dispatcher()
 
+random_image = random.choice(list(IMAGE_DICT.keys()))
+
+is_like = False
+is_dislike = False
+
 
 async def on_startup():
-    print('Я был запущен!')
+    print('Бот запущен!')
+
+
+async def random_img(message: types.Message):
+    global random_image
+    random_image = random.choice(list(filter(lambda x: x != random_image, list(IMAGE_DICT.keys()))))
+    await bot.send_photo(chat_id=message.chat.id,
+                         photo=random_image,
+                         caption=IMAGE_DICT.get(random_image),
+                         reply_markup=vote_inline_keyboard)
 
 
 # Handler /start command
 @dp.message(Command('start'))
 async def cmd_start(message: types.Message):
-    await bot.send_message(chat_id=message.chat.id,
-                           text="<b>Hi, I'm a Telegram bot, powered by <em>aiogram!</em> Let's start!</b>",
-                           parse_mode="HTML",
-                           reply_markup=commands_keyboard)
-
     await message.delete()
+    await bot.send_message(chat_id=message.chat.id,
+                           text="<b>Добро пожаловать в наш бот!</b> 🖖",
+                           parse_mode="HTML",
+                           reply_markup=main_menu_keyboard)
+    await bot.send_sticker(chat_id=message.chat.id,
+                           sticker=random.choice(HELLO_STICKERS))
 
 
-# Handler /discription command
+# Handler /description command
 @dp.message(Command('description'))
 async def cmd_description(message: types.Message):
-    await message.answer(text='In future this bot can reminds you about your schedule')
+    await message.delete()
+    await bot.send_message(chat_id=message.chat.id, text='Этот бот может отправлять рандомные картинки')
 
 
 # Handler /help command
 @dp.message(Command('help'))
 async def cmd_help(message: types.Message):
-    await bot.send_message(chat_id=message.from_user.id,
+    await message.delete()
+    await bot.send_message(chat_id=message.chat.id,
                            text=HELP,
                            parse_mode='HTML')
-    await message.delete()
-
-
-# Handler /get_orange command
-@dp.message(Command('get_orange'))
-async def get_pic_cmd(message: types.Message):
-    await bot.send_photo(chat_id=message.chat.id,
-                         photo='https://proprikol.ru/wp-content/uploads/2019/10/kartinki-apelsina-8.jpg',
-                         caption='Тебе нравится это фото?',
-                         reply_markup=vote_inline_keyboard)
-    await message.delete()
-
-
-@dp.callback_query()
-async def vote_callback(callback: types.CallbackQuery):
-    if callback.data == 'like':
-        await callback.answer(text='Вам понравилась фотография')
-    await callback.answer(text='Вам не понравилась фотография')
-
-# Handler /get_location command
-@dp.message(Command('get_location'))
-async def get_loc_cmd(message: types.Message):
-    await bot.send_location(chat_id=message.chat.id,
-                            latitude=random.randint(-90, 90) + round(random.random(), 4),
-                            longitude=random.randint(-180, 180) + round(random.random(), 4))
-    await message.delete()
-
-
-# Handler /count command
-@dp.message(Command('count'))
-async def cmd_cont(message: types.Message):
-    global count
-    count += 1
-    await message.reply(text=f'Count: {count}')
-
-
-# Handler /get_sticker command
-@dp.message(Command('get_sticker'))
-async def get_sticker_cmd(message: types.Message):
-    await message.answer(text='Смотри какой смешной кот ❤️!')
-    await bot.send_sticker(message.chat.id,
-                           sticker='CAACAgIAAxkBAAELxX9l_WEo_sSMW3JO_RwhZTP9_EGD5gACwQ4AApq2SUhGy_Y9suGsBTQE')
-
-
-# Handler sticker message
-@dp.message(F.content_type == ContentType.STICKER)
-async def get_sticker_id(message: types.Message):
-    await message.reply(message.sticker.file_id)
-
-
-@dp.message(F.text == '❤️')
-async def get_cat_sticker(message: types.Message):
-    await bot.send_sticker(chat_id=message.chat.id,
-                           sticker='CAACAgIAAxkBAAELxnxl_oNPVyP2v04UJkGBXR9rfhcqVwAC3gkAAqe9wEvo_3MQ5y3rrDQE')
 
 
 # Handler /links command
 @dp.message(Command('links'))
 async def get_links(message: types.Message):
+    await message.delete()
     await bot.send_message(chat_id=message.chat.id,
                            text='Вот ссылки на соц.сети моего разработчика',
                            reply_markup=links_inline_keyboard)
 
 
-# Handler any message
-@dp.message()
-async def any_msg(message: types.Message):
-    if '❤️' in message.text:
-        msg_text = message.text.replace('❤️', '🖤')
-        await message.answer(msg_text)
+# Handler Рандомная фотография command
+@dp.message(F.text == 'Рандомная фотография')
+async def get_random_image(message: types.Message):
+    await message.delete()
+    await bot.send_message(chat_id=message.chat.id,
+                           text='Рандомная фотография',
+                           reply_markup=ReplyKeyboardRemove())
+    await random_img(message)
+
+
+@dp.callback_query()
+async def vote_callback(callback: types.CallbackQuery):
+    global random_image, is_like, is_dislike
+    if callback.data == 'like':
+        if not is_like or is_dislike:
+            await callback.answer(text='Вам понравилась фотография!')
+            is_like = True
+            is_dislike = False
+        else:
+            await callback.answer(text='Вы уже лайкали!')
+    elif callback.data == 'dislike':
+        if is_like or not is_dislike:
+            await callback.answer(text='Вам не понравилась фотография!')
+            is_like = False
+            is_dislike = True
+        else:
+            await callback.answer(text='Вы уже дизлайкали!')
+    elif callback.data == 'next':
+        random_image = random.choice(list(filter(lambda x: x != random_image, list(IMAGE_DICT.keys()))))
+        await callback.message.edit_media(types.InputMediaPhoto(media=random_image,
+                                                                caption=IMAGE_DICT.get(random_image)),
+                                          reply_markup=vote_inline_keyboard)
+        await callback.answer()
     else:
-        await message.answer(message.text)
-    await message.answer(f'Всего в тексте галочек: {message.text.count("✅")}.')
+        await callback.message.answer(text='Вы в главном меню. Выберите команду:',
+                                      reply_markup=main_menu_keyboard)
+        await callback.answer()
+
+
+# Handler /get_location command
+@dp.message(Command('get_location'))
+async def get_loc_cmd(message: types.Message):
+    await message.delete()
+    await bot.send_location(chat_id=message.chat.id,
+                            latitude=random.randint(-50, 50),
+                            longitude=random.randint(-100, 100))
 
 
 async def main():
