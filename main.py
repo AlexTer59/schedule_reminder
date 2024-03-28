@@ -1,26 +1,8 @@
-'''
-Global task (ru)
-1) Бот должен быть реализован таким образом, чтобы все обновления пропускались при оффлайн режиме; +
-2) Бот должен быть реализован в 2 файлах: в первом файле находится клавиатура бота, во втором файл, где
-расположен основной функционал бота; +
-3) У бота должны быть реализованы команды /start, /help, /description; +
-4) Должно присутвовать главное меню с клавиатурой, где пользователь может использовать каждую из этих команд; +
-5) должно быть реализовано меню, где пользователь может получить одну рандомную фотографию из заранее определенного
-списка. Оттуда должен быть переход на главное меню; +
-6) Под фотографией должно быть описание данной фотографии. При этом также должна присутствовать inline клавиатура; +
-7) При нажатии должен генерироваться callback запрос, ему должна быть сопоставлена обработка со стороны сервера; +
-8) inline клавиатура будет состоять из 4 кнопок: 1. Следующая рандомная фотография, 2. Лайк, 3. Дизлайк,
-4. Главное меню; +
-9) Если пользователь нажмет на лайк/дизлайк должен выводиться соответствующий label; +
-10) Требуется обработать повторное нажатие на кнопку при одной и той же фотографии;
-11) Требуется реализовать возможность отправлять стикеры, эмодзи и рандомное местоположение.
-'''
-
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.methods import DeleteWebhook
 from aiogram.types import ReplyKeyboardRemove
 from aiogram.filters.command import Command
-from keyboards import main_menu_keyboard, links_inline_keyboard, vote_inline_keyboard
+from keyboards import main_menu_keyboard, links_inline_keyboard, vote_inline_keyboard, counter_inline_keyboard
 import asyncio
 import random
 import os
@@ -33,7 +15,8 @@ HELP = '''
 <b>/start</b> - <em>начать работу с ботом;</em>
 <b>/help</b> - <em>список команд;</em>
 <b>/description</b> - <em>описание бота;</em>
-<b>/links</b> - <em>команда для вызова inline клавиатуры.</em>
+<b>/links</b> - <em>команда для вызова inline клавиатуры;</em>
+<b>/count</b> - <em>команда - счетчик нажатий;</em>
 <b>Рандомная фотография</b> - <em>команда для получения рандомной фотографии.</em>
 '''
 
@@ -73,6 +56,7 @@ random_image = random.choice(list(IMAGE_DICT.keys()))
 is_like = False
 is_dislike = False
 
+counter = 0
 
 async def on_startup():
     print('Бот запущен!')
@@ -84,7 +68,7 @@ async def random_img(message: types.Message):
     await bot.send_photo(chat_id=message.chat.id,
                          photo=random_image,
                          caption=IMAGE_DICT.get(random_image),
-                         reply_markup=vote_inline_keyboard)
+                         reply_markup=vote_inline_keyboard())
 
 
 # Handler /start command
@@ -94,7 +78,7 @@ async def cmd_start(message: types.Message):
     await bot.send_message(chat_id=message.chat.id,
                            text="<b>Добро пожаловать в наш бот!</b> 🖖",
                            parse_mode="HTML",
-                           reply_markup=main_menu_keyboard)
+                           reply_markup=main_menu_keyboard())
     await bot.send_sticker(chat_id=message.chat.id,
                            sticker=random.choice(HELLO_STICKERS))
 
@@ -121,7 +105,7 @@ async def get_links(message: types.Message):
     await message.delete()
     await bot.send_message(chat_id=message.chat.id,
                            text='Вот ссылки на соц.сети моего разработчика',
-                           reply_markup=links_inline_keyboard)
+                           reply_markup=links_inline_keyboard())
 
 
 # Handler Рандомная фотография command
@@ -132,6 +116,26 @@ async def get_random_image(message: types.Message):
                            text='Рандомная фотография',
                            reply_markup=ReplyKeyboardRemove())
     await random_img(message)
+
+
+@dp.message(Command('count'))
+async def cmd_count(message: types.Message) -> None:
+    await bot.send_message(chat_id=message.chat.id,
+                           text=f'Количество нажатий равно: {counter}',
+                           reply_markup=counter_inline_keyboard())
+
+
+@dp.callback_query(lambda callback_query: callback_query.data.startswith('btn'))
+async def count(callback: types.CallbackQuery) -> None:
+    global counter
+    if callback.data == 'btn_increase':
+        counter += 1
+        await callback.message.edit_text(text=f'Количество нажатий равно: {counter}',
+                                         reply_markup=counter_inline_keyboard())
+    elif callback.data == 'btn_decrease':
+        counter -= 1
+        await callback.message.edit_text(text=f'Количество нажатий равно: {counter}',
+                                         reply_markup=counter_inline_keyboard())
 
 
 @dp.callback_query()
@@ -155,11 +159,11 @@ async def vote_callback(callback: types.CallbackQuery):
         random_image = random.choice(list(filter(lambda x: x != random_image, list(IMAGE_DICT.keys()))))
         await callback.message.edit_media(types.InputMediaPhoto(media=random_image,
                                                                 caption=IMAGE_DICT.get(random_image)),
-                                          reply_markup=vote_inline_keyboard)
+                                          reply_markup=vote_inline_keyboard())
         await callback.answer()
     else:
         await callback.message.answer(text='Вы в главном меню. Выберите команду:',
-                                      reply_markup=main_menu_keyboard)
+                                      reply_markup=main_menu_keyboard())
         await callback.answer()
 
 
